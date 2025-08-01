@@ -1,0 +1,12 @@
+{
+  "1370456378937970858": {
+    "welcome": {
+      "channelId": "1370456385048940626",
+      "message": "**Hey! So happy you've joined our team!** *<@user>* **its so great to have you with us!**"
+    },
+    "goodbye": {
+      "channelId": "1370457884688781333",
+      "message": "<@user> has left the server"
+    }
+  }
+}

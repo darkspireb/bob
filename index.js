@@ -5,10 +5,9 @@ const app = express();
 const port = 3000;
 
 // === Replace these ===
-const TOKEN = 'MTM4MjYwNjU4ODg1Mzg3ODg1NA.GJxNsY.S1RlD4iizxKo6xFppqzFuXS9nbkmLCunEcoGq4';
-const CLIENT_ID = '1382606588853878854';
-const GUILD_ID = 'YOUR_G1370456378937970858UILD_ID';
-
+const TOKEN= 'your_discord_token_here';
+const CLIENT_ID= 'your_bot_application_id';
+const GUILD_ID= 'your_discord_server_id';
 // === Keep Replit alive ===
 app.get('/', (req, res) => res.send('Bot is alive!'));
 app.listen(port, () => console.log(`Express running on http://localhost:${port}`));

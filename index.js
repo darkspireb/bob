@@ -1,18 +1,31 @@
 const fs = require('fs');
-const { Client, GatewayIntentBits, Partials, SlashCommandBuilder, REST, Routes, Events } = require('discord.js');
+const {
+  Client,
+  GatewayIntentBits,
+  Partials,
+  SlashCommandBuilder,
+  REST,
+  Routes,
+  Events,
+  EmbedBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ActionRowBuilder
+} = require('discord.js');
 const express = require('express');
 const app = express();
 const port = 3000;
 
 // === Replace these ===
-const TOKEN= 'your_discord_token_here';
-const CLIENT_ID= 'your_bot_application_id';
-const GUILD_ID= 'your_discord_server_id';
+const TOKEN = 'YOUR_DISCORD_TOKEN';
+const CLIENT_ID = 'YOUR_CLIENT_ID';
+const GUILD_ID = 'YOUR_GUILD_ID'; // Needed to register commands
+
 // === Keep Replit alive ===
-app.get('/', (req, res) => res.send('Bot is alive!'));
+app.get('/', (req, res) => res.send('✅ Bot is alive!'));
 app.listen(port, () => console.log(`Express running on http://localhost:${port}`));
 
-// === Load or initialize welcomeData.json ===
+// === Load welcomeData.json (optional for welcome/goodbye) ===
 let welcomeData = {};
 try {
   welcomeData = JSON.parse(fs.readFileSync('welcomeData.json', 'utf8'));
@@ -47,7 +60,13 @@ const commands = [
     .addChannelOption(option =>
       option.setName('channel').setDescription('Channel to send message').setRequired(true))
     .addStringOption(option =>
-      option.setName('description').setDescription('Goodbye message (use <@user>)').setRequired(true))
+      option.setName('description').setDescription('Goodbye message (use <@user>)').setRequired(true)),
+
+  new SlashCommandBuilder()
+    .setName('sendverify')
+    .setDescription('Sends the verification embed with button')
+    .addChannelOption(option =>
+      option.setName('channel').setDescription('Where to send the verification message').setRequired(true))
 ].map(cmd => cmd.toJSON());
 
 const rest = new REST().setToken(TOKEN);
@@ -65,7 +84,7 @@ client.on(Events.InteractionCreate, async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   const channel = interaction.options.getChannel('channel');
-  const message = interaction.options.getString('description').replace('<@user>', `<@${interaction.user.id}>`);
+  const message = interaction.options.getString('description')?.replace('<@user>', `<@${interaction.user.id}>`);
 
   if (interaction.commandName === 'welcome') {
     welcomeData[interaction.guildId] = welcomeData[interaction.guildId] || {};
@@ -87,6 +106,44 @@ client.on(Events.InteractionCreate, async interaction => {
     fs.writeFileSync('welcomeData.json', JSON.stringify(welcomeData, null, 2));
     await channel.send(message);
     await interaction.reply({ content: '👋 Goodbye message saved and sent.', ephemeral: true });
+  }
+
+  if (interaction.commandName === 'sendverify') {
+    const embed = new EmbedBuilder()
+      .setColor(0x2f3136)
+      .setTitle('🔒 get member')
+      .setDescription('To get access to the rest of the server, please click the "get member" button.')
+      .setFooter({ text: 'Powered by темный' });
+
+    const button = new ButtonBuilder()
+      .setCustomId('verify_button')
+      .setLabel('GET MEMBER')
+      .setStyle(ButtonStyle.Primary);
+
+    const row = new ActionRowBuilder().addComponents(button);
+
+    await channel.send({ embeds: [embed], components: [row] });
+    await interaction.reply({ content: '✅ Sent verification message.', ephemeral: true });
+  }
+});
+
+// === Button interaction handler ===
+client.on(Events.InteractionCreate, async interaction => {
+  if (interaction.isButton() && interaction.customId === 'verify_button') {
+    const roleId = '1370756605662199829'; // ✅ Role to assign on verify
+    const member = interaction.guild.members.cache.get(interaction.user.id);
+    const role = interaction.guild.roles.cache.get(roleId);
+
+    if (!role) {
+      return interaction.reply({ content: '⚠️ Role not found.', ephemeral: true });
+    }
+
+    if (member.roles.cache.has(roleId)) {
+      return interaction.reply({ content: '✅ You are already given a member rule!', ephemeral: true });
+    }
+
+    await member.roles.add(roleId);
+    await interaction.reply({ content: '✅ You have been member and given access.', ephemeral: true });
   }
 });
 
@@ -114,4 +171,12 @@ client.on('guildMemberRemove', member => {
   }
 });
 
+// === Start the bot ===
 client.login(TOKEN);
+
+// === Bot status ===
+client.once('ready', () => {
+  console.log(`🤖 Logged in as ${client.user.tag}`);
+  client.user.setActivity('Replit pings', { type: 'WATCHING' });
+  client.user.setStatus('online');
+});
